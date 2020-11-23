@@ -61,7 +61,7 @@ IEEE_JOURNAL_URLS = [
     'https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=32'
 ]
 IEEE_JOURNAL_YEAR = {
-    'from': 2020,
+    'from': 2019,
     'to': 2020
 }
 
@@ -79,7 +79,9 @@ SEARCH_WORDS = [
 
 # Database
 MYSQL_HOST = 'localhost'
-MYSQL_DBNAME = 'data_processing'
+# MYSQL_DBNAME = 'data_processing'
+MYSQL_DBNAME = 'data_processing_IEEE'
+# MYSQL_DBNAME = 'data_processing_ACM'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'root'
 MYSQL_PORT = 3306

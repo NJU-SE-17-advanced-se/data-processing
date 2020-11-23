@@ -164,7 +164,7 @@ class IEEESpider(scrapy.Spider):
         if search_res:
             content = json.loads(search_res.group()[9:-1])
             self.logger.debug('starts crawl document title: {}'.format(content.get('title', None)))
-            required = ['title', 'authors', 'abstract',
+            required = ['title', 'authors', 'abstract', 'articleNumber',
                         'doi', 'publicationTitle', 'publicationYear', 'metrics',
                         'contentType', 'keywords']
             # contentType: conference, journal, book

@@ -36,6 +36,7 @@ class IEEEPaperItem(scrapy.Item):
     abstract = scrapy.Field()
     publication_number = scrapy.Field() # publication 标识某届会议
     issue_number = scrapy.Field() # IEEE 内部 issue id。issue 表示某届会议的某个出版物
+    articleNumber = scrapy.Field() # IEEE 内部文章 id
     publicationTitle = scrapy.Field()
     doi = scrapy.Field()
     publicationYear = scrapy.Field()
@@ -52,7 +53,7 @@ class ACMPaperItem(scrapy.Item):
     # conference = scrapy.Field() # 会议/期刊
     publication_id = scrapy.Field() # ACM 内部 id，对于会议来说是会议 publication doi，对于期刊（每一个 issue 都没有 doi）来说是一个内部id，如'/toc/tosem/2015/25/1',表示 tosem 2015年 volume 25 issue 1,可以唯一确定一个 issue。
     publication_title = scrapy.Field()
-    doi = scrapy.Field()
+    doi = scrapy.Field() # 同时也是 ACM 的 “内部” id。也就是说，有的这个看似是 doi，其实并未在 doi.org 注册。
     abstract = scrapy.Field()
     citation = scrapy.Field() # paper citation
     references = scrapy.Field() # 该文章引用的文章

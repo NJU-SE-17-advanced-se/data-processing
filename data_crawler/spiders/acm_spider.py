@@ -199,15 +199,16 @@ class ACMProceedingSpider(scrapy.Spider):
         result['abstract'] = paper.xpath('.//div[@class="abstractSection abstractInFull"]/p/text()').get()
         
         # paper references
-        references_selectors = paper.xpath('.//div[contains(@class, "article__references")]/ol[contains(@class, "references__list")]/li/span[@class="references__note"]')
+        references_selectors = paper.xpath('.//div[contains(@class, "article__references")]/ol[contains(@class, "references__list")]/li')
         result['references'] = [
             {
-                'reference_citation': reference.xpath('./text()').get(),
+                'order': int(reference.xpath('./@id').get().split('-')[1]), #id的样子大概是 ref-0001, 数字代表 order
+                'reference_citation': reference.xpath('./span/text()').get(),
                 'reference_links': [{
                         'link_type': link.xpath('./span[@class="visibility-hidden"]/text()').get(),
                         'link_url': link.xpath('./@href').get()
                     }
-                    for link in reference.xpath('./span[@class="references__suffix"]/a')
+                    for link in reference.xpath('./span/span[@class="references__suffix"]/a')
                 ]
             } for reference in references_selectors
         ]

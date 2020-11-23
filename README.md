@@ -141,6 +141,7 @@ scrapy crawl debug
 
 等于不实际发送请求，而是把之前的结果再次发送给pipeline处理
 
+
 ## 结果查看
 
 ### Raw Json File
@@ -149,7 +150,11 @@ scrapy crawl debug
 
 ### Database
 
-存储于数据库data_processing表中。
+总共有三个数据库：`data_processing`, `data_processing_IEEE`, `data_processing_ACM`
+
+`data_processing_IEEE`, `data_processing_ACM`可以认为分别是 IEEE ACM 数据库的一个子集，具有一样的性质。关键在于，第一，paper id 分别采用其内部 id；第二，reference 的存储采用 1 对 n 关系表来存，只要求 pid（文章 id）和 order（引用的顺序），其他的属性（doi title 等）都作为可为空的属性进行保存，最大程度得保留信息。
+
+其中`data_processing`用与给后端提供数据，我认为类似一个数据仓库的意义。最主要的区别，第一， paper id 是自行设定的，统一两个内部 id；第二，reference 可能不一样，相当于 paper 表内部得有向关系（n 对 n 关系），也就是说只考虑在爬取范围内得 paper 被引用的状况。当然这个 reference 得定义如果有所区别，之后也可以改。另外这一部分还没有完成。
 
 #### setting
 
@@ -183,17 +188,17 @@ scrapy crawl debug
 
 **注意此操作会将原名为data_processing的数据库删库**
 
-#### 数据库基本结构
+#### 数据库基本结构（ `data_processing_IEEE`, `data_processing_ACM`）
 
 ##### 1. affiliation
 
 TODO: 目前来看，ieee没有affliation的页面，因此也似乎没有内部id，怎么处理暂时不清楚。暂时用name来作为IEEE affiliation的id
 
-| 序号 |     名称      |                描述                 |     类型      |  键  | 为空 | 额外 | 默认值 |
-| :--: | :-----------: | :---------------------------------: | :-----------: | :--: | :--: | :--: | :----: |
-|  1   |     `id`      | ACM_{ACM内部id}或IEEE__{IEEE内部id} | varchar(255)  | PRI  |  NO  |      |        |
-|  2   |    `name`     |                                     | varchar(255)  |      |  NO  |      |        |
-|  3   | `description` |                                     | varchar(4095) |      | YES  |      |        |
+| 序号 |     名称      |           描述            |     类型      |  键  | 为空 | 额外 | 默认值 |
+| :--: | :-----------: | :-----------------------: | :-----------: | :--: | :--: | :--: | :----: |
+|  1   |     `id`      | {ACM内部id}或{IEEE内部id} | varchar(255)  | PRI  |  NO  |      |        |
+|  2   |    `name`     |                           | varchar(255)  |      |  NO  |      |        |
+|  3   | `description` |                           | varchar(4095) |      | YES  |      |        |
 
 ##### 2. domain
 
@@ -207,20 +212,21 @@ TODO: 目前来看，ieee没有affliation的页面，因此也似乎没有内部
 
 | 序号 |        名称        |        描述        |     类型      |  键  | 为空 | 额外 | 默认值 |
 | :--: | :----------------: | :----------------: | :-----------: | :--: | :--: | :--: | :----: |
-|  1   |        `id`        | 事实上是一个十六进制数, 是将 doi 取其 utf-8 编码的十六进制数字符串 | varchar(255)  | PRI  |  NO  |      |        |
+|  1   |        `id`        | IEEE, ACM inner id | varchar(255)  | PRI  |  NO  |      |        |
 |  2   |      `title`       |                    | varchar(255)  |      |  NO  |      |        |
 |  3   |       `abs`        |      abstract      | varchar(4095) |      |  NO  |      |        |
 |  4   |  `publication_id`  |  发表的会议的id  | varchar(255)  |      |  NO  |      |        |
 |  5   | `publication_date` | 发表年份，事实上和 publication表冗余，但是为了方便还是直接存了 | varchar(255)  |      |  NO  |      |        |
-|  6   |       `link`       | 事实上是 doi.org/{paper_doi} | varchar(255)  |      |  NO  |      |        |
-|  7  |       `citation`       | 被引量 | int(11) |      |  NO  |      |        |
+|  6   |       `link`       | 事实上是 `doi.org/{paper_doi}` | varchar(255)  |      |  YES  |      |        |
+|  7   |       `doi`       | 文章 doi | varchar(255)  |      |  YES  |      |        |
+|  8  |       `citation`       | 被引量 | int(11) |      |  NO  |      |        |
 
 
 ##### 4. researcher
 
 | 序号 |  名称  |                             描述                             |     类型     |  键  | 为空 | 额外 | 默认值 |
 | :--: | :----: | :----------------------------------------------------------: | :----------: | :--: | :--: | :--: | :----: |
-|  1   |  `id`  | ACM_{ACM内部id}或IEEE__{IEEE内部id}，如IEEE_37085628262，说明其主页是https://ieeexplore.ieee.org/author/37085628262 | varchar(255) | PRI  |  NO  |      |        |
+|  1   |  `id`  | ACM内部id}或{IEEE内部id}，如 IEEE 内 id 为37085628262，说明其主页是https://ieeexplore.ieee.org/author/37085628262 | varchar(255) | PRI  |  NO  |      |        |
 |  2   | `name` |                                                              | varchar(255) |      |  NO  |      |        |
 
 ##### 5. publication
@@ -233,14 +239,25 @@ TODO: 目前来看，ieee没有affliation的页面，因此也似乎没有内部
 |  4   |      `impact`      | 影响力因子（TODO:目前不知道怎么获得） | varchar(255) |      |  NO  |      |        |
 
 
-##### 6. paper_reference
+##### 6. paper_reference (in data_processing)
 
-注意，这里的reference是所有能够获得doi的文章，其他的reference被忽略；另外很可能这个doi不在爬取的范围内，既在paper表中没有这个rid。
+| 序号 | 名称  |        描述        |     类型     |  键  | 为空 | 额外 | 默认值 |
+| :--: | :---: | :----------------: | :----------: | :--: | :--: | :--: | :----: |
+|  1   | `pid` |      paper id      | varchar(255) | PRI  |  NO  |      |        |
+|  2   | `rid` | reference paper id | varchar(255) | PRI  |  NO  |      |        |
 
-| 序号 | 名称  |                             描述                             |     类型     |  键  | 为空 | 额外 | 默认值 |
-| :--: | :---: | :----------------------------------------------------------: | :----------: | :--: | :--: | :--: | :----: |
-|  1   | `pid` |                           paper id                           | varchar(255) | PRI  |  NO  |      |        |
-|  2   | `rid` | reference paper id ( doi 对应的编号, 这个id可能不在 paper 表中 )/ | varchar(255) | PRI  |  NO  |      |        |
+##### 6. paper_reference (in data_processing_IEEE and data_processing_ACM)
+
+这用与合并之后提供给 data_processing 库
+
+| 序号 | 名称 | 描述 | 类型 | 键 | 为空 | 额外 | 默认值 |
+| :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: |
+| 1 | `pid` | paper id | varchar(255) | PRI | NO |  |  |
+| 2 | `order` | 第几个引用 | int | PRI | NO |  |  |
+| 3 | `r_doi` | reference doi | varchar(255) |  | YES |  |  |
+| 4 | `r_title` | reference title | varchar(255) |  | YES |  |  |
+| 5 | `r_document_id` | reference document id (如果是来自 IEEE 的文章，则可能有，即 IEEE 内部文章 id) | varchar(255) |  | YES |  |  |
+| 6 | `r_citation` | reference citation string | varchar(4095) |  | YES |  |  |
 
 ##### 7. paper_researcher
 
@@ -266,44 +283,6 @@ TODO: 目前来看，ieee没有affliation的页面，因此也似乎没有内部
 |  1   | `rid`  |  researcher id   | varchar(255) | PRI  |  NO  |      |        |
 |  2   | `aid`  |  affiliation id  | varchar(255) | PRI  |  NO  |      |        |
 |  3   | `year` | 在某年发表了文章 | varchar(255) | PRI  |  NO  |      |        |
-
-##### *10. researcher_domain **弃用***
-
-由于 researcher domain 就是某研究者的所有文章的 domain 的集合，故不在数据爬取时就进行保存这种冗余数据表。
-
-| 序号 |  名称   |     描述      |     类型     |  键  | 为空 | 额外 | 默认值 |
-| :--: | :-----: | :-----------: | :----------: | :--: | :--: | :--: | :----: |
-|  1   |  `rid`  | researcher id | varchar(255) | PRI  |  NO  |      |        |
-|  2   | `dname` |  domain name  | varchar(255) | PRI  |  NO  |      |        |
-
-#####  11. paper_reference_citation
-
-存储暂时只能获得citation的reference，用于之后的进一步爬取
-
-| 序号 |         名称         |                          描述                           |     类型      |  键  | 为空 |      额外      | 默认值 |
-| :--: | :------------------: | :-----------------------------------------------------: | :-----------: | :--: | :--: | :------------: | :----: |
-|  1   |         `id`         | 自增id，没什么意义，只是由于citation比较长，无法作为key |      int      | PRI  |  NO  | auto_increment |        |
-|  2   |        `pid`         |                                                         | varchar(255)  |      |  NO  |                |        |
-|  3   | `reference_citation` |                                                         | varchar(4095) |      |  NO  |                |        |
-
-##### 12.  paper_reference_title
-
-存储暂时只能获得title的reference（存titile主要是因为IEEE给出的citation很奇怪，还不如title），用于之后的进一步爬取
-
-| 序号 |       名称        |                         描述                         |     类型      |  键  | 为空 |      额外      | 默认值 |
-| :--: | :---------------: | :--------------------------------------------------: | :-----------: | :--: | :--: | :------------: | :----: |
-|  1   |       `id`        | 自增id，没什么意义，只是由于title比较长，无法作为key |      int      | PRI  |  NO  | auto_increment |        |
-|  2   |       `pid`       |                                                      | varchar(255)  |      |  NO  |                |        |
-|  3   | `reference_title` |                                                      | varchar(4095) |      |  NO  |                |        |
-
-##### 13. paper_ieee_reference_document
-
-存储暂时只能获得IEEE内部编号的reference，用于之后的进一步爬取
-
-| 序号 |      名称       | 描述 |     类型     |  键  | 为空 | 额外 | 默认值 |
-| :--: | :-------------: | :--: | :----------: | :--: | :--: | :--: | :----: |
-|  1   |      `pid`      |      | varchar(255) | PRI  |  NO  |      |        |
-|  2   | `ieee_document` |      | varchar(255) | PRI  |  NO  |      |        |
 
 ## 其他设置
 

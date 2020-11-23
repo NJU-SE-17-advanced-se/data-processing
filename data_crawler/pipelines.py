@@ -75,9 +75,9 @@ class ACMPaper2UnifyPipeline:
         for author in item['authors']:
             order += 1
             author_profile_sp = author['author_profile'].split('/profile/')
-            author_id = author_profile_sp[len(author_profile_sp) - 1]
+            author_id = author_profile_sp[len(author_profile_sp) - 1] # d.g. "/profile/99659280949"
             paper_author = {
-                'id': 'ACM_' + author_id, # d.g. "/profile/99659280949"
+                'id': author_id, 
                 'name': author['author_name'],
                 'order': order,
                 'affiliation': author['affiliation']
@@ -85,32 +85,29 @@ class ACMPaper2UnifyPipeline:
             paper_authors.append(paper_author)
         paper['authors'] = paper_authors        
         paper['abstract'] = item['abstract']
-        paper['publication_id'] = encode(item['publication_id'])
+        paper['publication_id'] = item['publication_id']
         paper['publicationTitle'] = item['publication_title']
         paper['doi'] = item['doi']
-        paper['id'] = encode(item['doi'])
+        paper['id'] = item['doi']
         paper['citation'] = item['citation']
         paper['publicationYear'] = item['month_year'].split()[1]
         
-        # TODO: 需要把reference改为统一从google scholar来获取
-        paper_references = []
-        paper_ref_citaion = []
+        paper['references'] = []
         for reference in item['references']:
-            no_dl = True # whether this reference has DL link, if not, store the citation.
+            ref = {
+                'order': reference.get('order', None),
+                'title': None,
+                'doi': None,
+                'ieee_document_id': None,
+                'citation': reference.get('reference_citation', None)
+            }
             for link in reference['reference_links']:
                 if link['link_type'] == 'Digital Library':
                     # logging.warning(link['link_type'])
                     # 形式可能是 "/doi/10.1109/TSE.2015.2419611" 或 "https://dl.acm.org/doi/10.1145/3092703.3092718"
                     link_element = link['link_url'].split('/')
-                    paper_references.append(link_element[len(link_element) - 2] + '/' + link_element[len(link_element) - 1])
-                    no_dl = False
-            if no_dl:
-                paper_ref_citaion.append(reference['reference_citation'])
-
-        paper['references'] = paper_references
-        paper['ref_citation'] = paper_ref_citaion
-        paper['ref_ieee_document'] = []
-        paper['ref_title'] = []
+                    ref['doi'] = link_element[len(link_element) - 2] + '/' + link_element[len(link_element) - 1]
+            paper['references'].append(ref)
         
         paper['keywords'] = get_acm_keywords(item['index_term_tree'])
 
@@ -133,7 +130,7 @@ class IEEEPaper2UnifyPipeline:
         for author in item['authors']:
             order += 1
             paper_author = {
-                'id': 'IEEE_' + author['id'],
+                'id': author['id'],
                 'name': author['name'],
                 'order': order,
                 'affiliation': author['affiliation']
@@ -141,39 +138,32 @@ class IEEEPaper2UnifyPipeline:
             paper_authors.append(paper_author)
         paper['authors'] = paper_authors
         paper['abstract'] = item['abstract']
-        paper['publication_id'] = encode('IEEE_' + str(item['publication_number']) + '_' + str(item['issue_number']))
+        paper['publication_id'] = str(item['publication_number']) + '_' + str(item['issue_number'])
         paper['publicationTitle'] = item['publicationTitle']
         paper['doi'] = item['doi']
-        paper['id'] = encode(paper['doi'])
+        paper['id'] = item['articleNumber']
         paper['citation'] = item['metrics']['citationCountPaper']
         paper['publicationYear'] = item['publicationYear']
 
         # 对IEEE需要处理两种：crossRefLink acmLink. 第三种是document类型的，需要爬一个新的页面。
-        paper_references_doi = []
-        paper['ref_ieee_document'] = []
-        paper['ref_title'] = []
-        paper['ref_citation'] = []
+        paper['references'] = []
         for reference in item['references']:
+            ref = {
+                'order': reference.get('order', None),
+                'title': reference.get('title', None),
+                'doi': None,
+                'ieee_document_id': None,
+                'citation': reference.get('text', None)
+            }
             if 'links' in reference and reference['links'] != None:
-                reference_doi = ''
-                if 'acmLink' in reference['links']:
-                    if 'https://doi.org/' in reference['links']['acmLink']:
-                        reference_doi = reference['links']['acmLink'][16:]
-                elif 'crossRefLink' in reference['links']:
-                    if 'https://doi.org/' in reference['links']['crossRefLink']:
+                if 'acmLink' in reference['links'] and 'https://doi.org/' in reference['links']['acmLink']:
+                        ref['doi'] = reference['links']['acmLink'][16:]
+                if 'crossRefLink' in reference['links'] and 'https://doi.org/' in reference['links']['crossRefLink']:
                         # 不确定是否crossref都是doi开头，故只取doi的
-                        reference_doi = reference['links']['crossRefLink'][16:] # remove https://doi.org/, 16 charactors
-                elif 'documentLink' in reference['links']:
-                    paper['ref_ieee_document'].append(reference['links']['documentLink'])
-                    continue
-                else:
-                    paper['ref_title'].append(reference['title'])
-                    continue
-                paper_references_doi.append(reference_doi)
-            else:
-                # no links, only avaliable in google scholar
-                paper['ref_title'].append(reference['title'])
-        paper['references'] = paper_references_doi
+                        ref['doi'] = reference['links']['crossRefLink'][16:] # remove https://doi.org/, 16 charactors
+                if 'documentLink' in reference['links']:
+                    ref['ieee_document_id'] = reference['links']['documentLink']
+            paper['references'].append(ref)
         
         paper_keywords = []
         # 将IEEE controlled index作为domain存储
@@ -227,11 +217,18 @@ class UnifyPaperMysqlPipeline(object):
         logging.debug('inserting paper doi "{}" to mysql'.format(paper['doi']))
         # insert database table: paper
         insert_sql = """
-            insert into paper(id, title, abs, publication_id, publication_date, link, citation) VALUES(%s,%s,%s,%s,%s,%s,%s)
+            insert into paper(id, title, abs, publication_id, publication_date, link, doi, citation) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
                     """
         self.execute_sql(
             insert_sql, 
-            (paper['id'], paper['title'], paper['abstract'], paper['publication_id'], paper['publicationYear'], 'doi.org/' + paper['doi'], paper['citation']),
+            (paper['id'],
+            paper['title'],
+            paper['abstract'],
+            paper['publication_id'],
+            paper['publicationYear'],
+            'doi.org/' + paper['doi'] if paper['doi'] != None else None,
+            paper['doi'],
+            paper['citation']),
             cursor,
             self.merge_paper,
             (paper,)
@@ -293,7 +290,7 @@ class UnifyPaperMysqlPipeline(object):
         insert into paper_domain(`pid`, `did`) VALUES(%s, %s)
         """
         for keyword in paper['keywords']:
-            logging.debug('inserting keyword "{}" in paper "{}" "{}"'.format(keyword, paper['doi'], paper['title']))
+            logging.debug('inserting keyword "{}" in paper doi:"{}" title:"{}"'.format(keyword, paper['doi'], paper['title']))
             self.execute_sql(
                 insert_domain_sql, 
                 (encode(keyword), keyword),
@@ -307,15 +304,14 @@ class UnifyPaperMysqlPipeline(object):
             )
             
         # insert database table: paper_reference
-        # 1.这里的reference是所有能够获得doi的文章，其他的reference被忽略；
-        # 2.很可能这个doi不在爬取的范围内，既在paper表中没有这个doi。
+        # 将所有 reference 尽可能多的信息进行保存。1 对 n 关系。
         insert_paper_reference_sql = """
-        insert into paper_reference(`pid`, `rid`) VALUES(%s, %s)
+        insert into paper_reference(`pid`, `order`, `r_doi`, `r_title`, `r_document_id`, `r_citation`) VALUES(%s, %s, %s, %s, %s, %s)
         """
-        for reference_doi in paper['references']:
+        for reference in paper['references']:
             self.execute_sql(
                 insert_paper_reference_sql,
-                (paper['id'], encode(reference_doi)),
+                (paper['id'], reference['order'], reference['doi'], reference['title'], reference['ieee_document_id'], reference['citation']),
                 cursor
             )
         
@@ -329,26 +325,6 @@ class UnifyPaperMysqlPipeline(object):
             cursor
         )
 
-        # 仅用于进一步爬取
-        # insert database table: paper_ieee_reference_document, paper_reference_citation, paper_reference_title
-        for ieee_doc in paper['ref_ieee_document']:
-            self.execute_sql(
-                'insert into paper_ieee_reference_document(`pid`, `ieee_document`) VALUES(%s, %s)',
-                (paper['id'], ieee_doc),
-                cursor
-            )
-        for title in paper['ref_title']:
-            self.execute_sql(
-                'insert into paper_reference_title(`pid`, `reference_title`) VALUES(%s, %s)',
-                (paper['id'], title),
-                cursor
-            )
-        for citation in paper['ref_citation']:
-            self.execute_sql(
-                'insert into paper_reference_citation(`pid`, `reference_citation`) VALUES(%s, %s)',
-                (paper['id'], citation),
-                cursor
-            )
 
     @staticmethod
     def execute_sql(sql, values, cursor, callback_dulp_key = None, callback_dulp_key_args = None):
