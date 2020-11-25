@@ -118,8 +118,8 @@ class IEEESpider(scrapy.Spider):
 
         #处理此页的所有文章
         for record in content['records']:
-            # usually record without author is no paper, but information like title, reviewer panel, author index, etc.
-            if 'authors' in record:
+            # usually record without documentLink is not paper, but information like title, reviewer panel, author index, editorial, etc.
+            if 'documentLink' in record:
                 yield scrapy.Request(
                     url=self.ieee_base_url + record['documentLink'],
                     callback=self.parse_document,
@@ -187,16 +187,16 @@ class IEEESpider(scrapy.Spider):
         """ parse references of a paper. Yield the complete paper item
         """
         # save_str_file(response.text, 'refereneces.json')
-        references = []
         item = response.meta['paper_item']
         content = json.loads(response.text)
-        for reference in content.get('references'):
-            ref = {}
-            ref['order'] = reference.get('order')
-            ref['text'] = reference.get('text') # could be the reference citation
-            ref['links'] = reference.get('links')
-            ref['title'] = reference.get('title')
-            references.append(ref)
-        item['references'] = references
+        item['references'] = []
+        if 'references' in content:
+            for reference in content.get('references'):
+                ref = {}
+                ref['order'] = reference.get('order')
+                ref['text'] = reference.get('text') # could be the reference citation
+                ref['links'] = reference.get('links')
+                ref['title'] = reference.get('title')
+                item['references'].append(ref)
         yield item
             

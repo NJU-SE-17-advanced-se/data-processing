@@ -49,7 +49,7 @@ class IEEEPaperItem(scrapy.Item):
 class ACMPaperItem(scrapy.Item):
     title = scrapy.Field() # 标题
     authors = scrapy.Field() # 作者
-    month_year = scrapy.Field() # 月份和年份
+    year = scrapy.Field() # 年份
     # conference = scrapy.Field() # 会议/期刊
     publication_id = scrapy.Field() # ACM 内部 id，对于会议来说是会议 publication doi，对于期刊（每一个 issue 都没有 doi）来说是一个内部id，如'/toc/tosem/2015/25/1',表示 tosem 2015年 volume 25 issue 1,可以唯一确定一个 issue。
     publication_title = scrapy.Field()

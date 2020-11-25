@@ -28,10 +28,9 @@ class RemoveEmptyItemPipeline:
     def process_item(self, item, spider):
         if item == None:
             raise DropItem("found none item")
-        if isinstance(item, IEEEPaperItem) and item.get('title') == None:
+        if isinstance(item, IEEEPaperItem) and (item.get('title') == None or item['authors'] == None):
             # TODO: 暂时对于空的paper的判断是通过是否有title来进行，可能要进行修改
-            raise DropItem("ieee paper item found: %r" % item)
-
+            raise DropItem("Drop ieee paper item")
         return item
 
 
@@ -57,6 +56,8 @@ class ACMPaper2UnifyPipeline:
             """
             从ACM index tree中获得所有关键词
             """
+            if tree == None:
+                return []
             result = []
             if tree['url'] != None:
                 # 根结点是没有url的，其title是文章标题
@@ -71,43 +72,48 @@ class ACMPaper2UnifyPipeline:
         paper['title'] = item['title']
 
         order = 0
-        paper_authors = []
-        for author in item['authors']:
-            order += 1
-            author_profile_sp = author['author_profile'].split('/profile/')
-            author_id = author_profile_sp[len(author_profile_sp) - 1] # d.g. "/profile/99659280949"
-            paper_author = {
-                'id': author_id, 
-                'name': author['author_name'],
-                'order': order,
-                'affiliation': author['affiliation']
-            }
-            paper_authors.append(paper_author)
-        paper['authors'] = paper_authors        
+        paper['authors'] = []
+        if 'authors' in item:
+            for author in item['authors']:
+                order += 1
+                if 'author_profile' not in author:
+                    # 没有 id 的作者，暂时不考虑
+                    continue
+                author_profile_sp = author['author_profile'].split('/profile/')
+                author_id = author_profile_sp[len(author_profile_sp) - 1] # d.g. "/profile/99659280949"
+                paper_author = {
+                    'id': author_id, 
+                    'name': author['author_name'],
+                    'order': order,
+                    'affiliation': author.get('affiliation')
+                }
+                paper['authors'].append(paper_author)    
         paper['abstract'] = item['abstract']
         paper['publication_id'] = item['publication_id']
         paper['publicationTitle'] = item['publication_title']
         paper['doi'] = item['doi']
         paper['id'] = item['doi']
         paper['citation'] = item['citation']
-        paper['publicationYear'] = item['month_year'].split()[1]
+        paper['publicationYear'] = item['year']
         
         paper['references'] = []
-        for reference in item['references']:
-            ref = {
-                'order': reference.get('order', None),
-                'title': None,
-                'doi': None,
-                'ieee_document_id': None,
-                'citation': reference.get('reference_citation', None)
-            }
-            for link in reference['reference_links']:
-                if link['link_type'] == 'Digital Library':
-                    # logging.warning(link['link_type'])
-                    # 形式可能是 "/doi/10.1109/TSE.2015.2419611" 或 "https://dl.acm.org/doi/10.1145/3092703.3092718"
-                    link_element = link['link_url'].split('/')
-                    ref['doi'] = link_element[len(link_element) - 2] + '/' + link_element[len(link_element) - 1]
-            paper['references'].append(ref)
+        if 'references' in item:
+            for reference in item['references']:
+                ref = {
+                    'order': reference.get('order', None),
+                    'title': None,
+                    'doi': None,
+                    'ieee_document_id': None,
+                    'citation': reference.get('reference_citation', None)
+                }
+                if 'reference_links' in reference:
+                    for link in reference['reference_links']:
+                        if link['link_type'] == 'Digital Library':
+                            # logging.warning(link['link_type'])
+                            # 形式可能是 "/doi/10.1109/TSE.2015.2419611" 或 "https://dl.acm.org/doi/10.1145/3092703.3092718"
+                            link_element = link['link_url'].split('/')
+                            ref['doi'] = link_element[len(link_element) - 2] + '/' + link_element[len(link_element) - 1]
+                paper['references'].append(ref)
         
         paper['keywords'] = get_acm_keywords(item['index_term_tree'])
 
@@ -126,17 +132,20 @@ class IEEEPaper2UnifyPipeline:
         paper['title'] = item['title']
 
         order = 0
-        paper_authors = []
-        for author in item['authors']:
-            order += 1
-            paper_author = {
-                'id': author['id'],
-                'name': author['name'],
-                'order': order,
-                'affiliation': author['affiliation']
-            }
-            paper_authors.append(paper_author)
-        paper['authors'] = paper_authors
+        paper['authors'] = []
+        if 'authors' in item:
+            for author in item['authors']:
+                order += 1
+                if 'id' not in author:
+                    # 对于没有 id 的 author，暂时不考虑。
+                    continue
+                paper_author = {
+                    'id': author['id'],
+                    'name': author['name'],
+                    'order': order,
+                    'affiliation': author['affiliation']
+                }
+                paper['authors'].append(paper_author)
         paper['abstract'] = item['abstract']
         paper['publication_id'] = str(item['publication_number']) + '_' + str(item['issue_number'])
         paper['publicationTitle'] = item['publicationTitle']
@@ -147,31 +156,33 @@ class IEEEPaper2UnifyPipeline:
 
         # 对IEEE需要处理两种：crossRefLink acmLink. 第三种是document类型的，需要爬一个新的页面。
         paper['references'] = []
-        for reference in item['references']:
-            ref = {
-                'order': reference.get('order', None),
-                'title': reference.get('title', None),
-                'doi': None,
-                'ieee_document_id': None,
-                'citation': reference.get('text', None)
-            }
-            if 'links' in reference and reference['links'] != None:
-                if 'acmLink' in reference['links'] and 'https://doi.org/' in reference['links']['acmLink']:
-                        ref['doi'] = reference['links']['acmLink'][16:]
-                if 'crossRefLink' in reference['links'] and 'https://doi.org/' in reference['links']['crossRefLink']:
-                        # 不确定是否crossref都是doi开头，故只取doi的
-                        ref['doi'] = reference['links']['crossRefLink'][16:] # remove https://doi.org/, 16 charactors
-                if 'documentLink' in reference['links']:
-                    ref['ieee_document_id'] = reference['links']['documentLink']
-            paper['references'].append(ref)
-        
-        paper_keywords = []
+        if 'references' in item:
+            for reference in item['references']:
+                ref = {
+                    'order': reference.get('order', None),
+                    'title': reference.get('title', None),
+                    'doi': None,
+                    'ieee_document_id': None,
+                    'citation': reference.get('text', None)
+                }
+                if 'links' in reference and reference['links'] != None:
+                    if 'acmLink' in reference['links'] and 'https://doi.org/' in reference['links']['acmLink']:
+                            ref['doi'] = reference['links']['acmLink'][16:]
+                    if 'crossRefLink' in reference['links'] and 'https://doi.org/' in reference['links']['crossRefLink']:
+                            # 不确定是否crossref都是doi开头，故只取doi的
+                            ref['doi'] = reference['links']['crossRefLink'][16:] # remove https://doi.org/, 16 charactors
+                    if 'documentLink' in reference['links']:
+                        ref['ieee_document_id'] = reference['links']['documentLink'].split('/')[2]
+                paper['references'].append(ref)
+
+
         # 将IEEE controlled index作为domain存储
-        for keyword_group in item['keywords']:
-            if keyword_group['type'] == 'INSPEC: Controlled Indexing':
-                for controlled_index in keyword_group['kwd']:
-                    paper_keywords.append(controlled_index)
-        paper['keywords'] = paper_keywords
+        paper['keywords'] = []
+        if 'keywords' in item:
+            for keyword_group in item['keywords']:
+                if keyword_group.get('type') == 'INSPEC: Controlled Indexing':
+                    for controlled_index in keyword_group['kwd']:
+                        paper['keywords'].append(controlled_index)
         return paper
     
 class UnifyPaperMysqlPipeline(object):
@@ -221,17 +232,17 @@ class UnifyPaperMysqlPipeline(object):
                     """
         self.execute_sql(
             insert_sql, 
-            (paper['id'],
-            paper['title'],
-            paper['abstract'],
-            paper['publication_id'],
-            paper['publicationYear'],
-            'doi.org/' + paper['doi'] if paper['doi'] != None else None,
-            paper['doi'],
-            paper['citation']),
-            cursor,
-            self.merge_paper,
-            (paper,)
+            (
+                paper['id'],
+                paper['title'],
+                paper['abstract'],
+                paper['publication_id'],
+                paper['publicationYear'],
+                'doi.org/' + paper['doi'] if paper['doi'] != None else None,
+                paper['doi'],
+                paper['citation']
+            ),
+            cursor
         )
 
         # insert database table: researcher paper_researcher affiliation researcher_affiliation
@@ -327,7 +338,7 @@ class UnifyPaperMysqlPipeline(object):
 
 
     @staticmethod
-    def execute_sql(sql, values, cursor, callback_dulp_key = None, callback_dulp_key_args = None):
+    def execute_sql(sql, values, cursor):
         """
         callback_dupl_key是插入数据库时发现key重复时的回调函数(当且仅当传了这个参数)
         callback_dulp_key_args是一个iterable, unpack之后作为callback_dulp_key's arguments 
@@ -335,18 +346,13 @@ class UnifyPaperMysqlPipeline(object):
         try:
             cursor.execute(sql, values)
         except pymysql.err.IntegrityError as e:
-            if(e.args[0] == 1062) and (callback_dulp_key != None):
+            if(e.args[0] == 1062):
                 # 1062是pymysql duplicate key的错误码
-                callback_dulp_key(*callback_dulp_key_args)   
+                logging.debug(e)
             else:
                 # TODO: other exceptions
                 logging.warning(e)
 
-    def merge_paper(self, item):
-        """
-        TODO:发现IEEE ACM的重复文章，合并其中的所有作者、所有affliation
-        """
-        pass
 
     def handle_error(self, failure):
         if failure:

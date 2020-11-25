@@ -1,0 +1,1 @@
+mysql -h localhost -u root -p --database data_processing_IEEE < data_processing_SUB.sql

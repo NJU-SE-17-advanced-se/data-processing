@@ -85,7 +85,8 @@ class ACMProceedingSpider(scrapy.Spider):
                     url=self.acm_base_url + issue_url,
                     callback=self.parse_paper,
                     meta={
-                        'publication_id': response.request.url[18:] # 例如 'https://dl.acm.org/toc/tosem/2015/25/1'，取'/toc/tosem/2015/25/1'
+                        'publication_id': response.request.url[18:], # 例如 'https://dl.acm.org/toc/tosem/2015/25/1'，取'/toc/tosem/2015/25/1',
+                        'year': response.request.url[18:].split('/')[3]
                     }
                 )
 
@@ -168,7 +169,7 @@ class ACMProceedingSpider(scrapy.Spider):
         for author in authors:
             result_author = {
                 'author_name': author.xpath('.//span[@class="loa__author-name"]/span/text()').get(),
-                'author_profile': author.xpath('//div[@class="author-info"]//div[@class="author-info__body"]/a/@href').get(),
+                'author_profile': author.xpath('.//div[@class="author-info"]//div[@class="author-info__body"]/a/@href').get(),
                 'affiliation': author.xpath('.//div[@class="author-info__body"]/p/text()').getall()
             }
             result['authors'].append(result_author)
@@ -183,7 +184,9 @@ class ACMProceedingSpider(scrapy.Spider):
         result['publication_title'] = publication.xpath('./a/@title').get()
 
         # paper发表年月
-        result['month_year'] = publication.xpath('.//span[@class="epub-section__date"]/text()').get()
+        result['year'] = publication.xpath('.//span[@class="epub-section__date"]/text()').get().split()[1]
+        if 'year' in response.meta:
+            result['year'] = response.meta['year']
 
         # paper doi
         try:
@@ -200,18 +203,21 @@ class ACMProceedingSpider(scrapy.Spider):
         
         # paper references
         references_selectors = paper.xpath('.//div[contains(@class, "article__references")]/ol[contains(@class, "references__list")]/li')
-        result['references'] = [
-            {
-                'order': int(reference.xpath('./@id').get().split('-')[1]), #id的样子大概是 ref-0001, 数字代表 order
-                'reference_citation': reference.xpath('./span/text()').get(),
-                'reference_links': [{
-                        'link_type': link.xpath('./span[@class="visibility-hidden"]/text()').get(),
-                        'link_url': link.xpath('./@href').get()
-                    }
-                    for link in reference.xpath('./span/span[@class="references__suffix"]/a')
-                ]
-            } for reference in references_selectors
-        ]
+        if references_selectors != None:
+            result['references'] = [
+                {
+                    'order': int(reference.xpath('./@id').get().split('-')[1]), #id的样子大概是 ref-0001, 数字代表 order
+                    'reference_citation': reference.xpath('./span/text()').get(),
+                    'reference_links': [{
+                            'link_type': link.xpath('./span[@class="visibility-hidden"]/text()').get(),
+                            'link_url': link.xpath('./@href').get()
+                        }
+                        for link in reference.xpath('./span/span[@class="references__suffix"]/a')
+                    ]
+                } for reference in references_selectors
+            ]
+        else:
+            result['references'] = []
 
         # index term
         root_selector = response.xpath('.//ol[@class="rlist organizational-chart"]/li')

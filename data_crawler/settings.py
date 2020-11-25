@@ -33,7 +33,41 @@ NEWSPIDER_MODULE = 'data_crawler.spiders'
 ACM_URL = ['https://dl.acm.org/action/doSearch?fillQuickSearch=false&expand=dl&field1=AllField&text1=shit&Ppub=%5B20200907+TO+20201007%5D'] 
 ### ACM conference proceeding urls
 ACM_PROCEEDING_URLS = [
-    'https://dl.acm.org/doi/proceedings/10.1145/3238147'
+    # ASE 19 - 09
+    'https://dl.acm.org/doi/proceedings/10.5555/3382508',
+    'https://dl.acm.org/doi/proceedings/10.1145/3238147',
+    'https://dl.acm.org/doi/proceedings/10.5555/3155562',
+    'https://dl.acm.org/doi/proceedings/10.1145/2970276',
+    'https://dl.acm.org/doi/proceedings/10.5555/3343886',
+    'https://dl.acm.org/doi/proceedings/10.1145/2642937',
+    'https://dl.acm.org/doi/proceedings/10.5555/3107656',
+    'https://dl.acm.org/doi/proceedings/10.1145/2351676',
+    'https://dl.acm.org/doi/proceedings/10.5555/2190078',
+    'https://dl.acm.org/doi/proceedings/10.1145/1858996',
+    'https://dl.acm.org/doi/proceedings/10.5555/1747491',
+    # ICSE 19 - 09
+    'https://dl.acm.org/doi/proceedings/10.5555/3339505',
+    'https://dl.acm.org/doi/proceedings/10.1145/3180155',
+    'https://dl.acm.org/doi/proceedings/10.5555/3097368',
+    'https://dl.acm.org/doi/proceedings/10.1145/2884781',
+    'https://dl.acm.org/doi/proceedings/10.5555/2818754',
+    'https://dl.acm.org/doi/proceedings/10.5555/2819009',
+    'https://dl.acm.org/doi/proceedings/10.1145/2568225',
+    'https://dl.acm.org/doi/proceedings/10.5555/2486788',
+    'https://dl.acm.org/doi/proceedings/10.5555/2337223',
+    'https://dl.acm.org/doi/proceedings/10.5555/2337223',
+    'https://dl.acm.org/doi/proceedings/10.1145/1806799',
+    'https://dl.acm.org/doi/proceedings/10.1145/1810295',
+    'https://dl.acm.org/doi/proceedings/10.5555/1555001',
+    # ICSE Companion 19 - 09
+    'https://dl.acm.org/doi/proceedings/10.5555/3339663',
+    'https://dl.acm.org/doi/proceedings/10.1145/3183440',
+    'https://dl.acm.org/doi/proceedings/10.5555/3098344',
+    'https://dl.acm.org/doi/proceedings/10.1145/2889160',
+    'https://dl.acm.org/doi/proceedings/10.1145/2591062',
+    'https://dl.acm.org/doi/proceedings/10.5555/1585694'
+
+
 ]
 ### ACM journals
 ACM_JOURNAL_URLS = [
@@ -41,18 +75,19 @@ ACM_JOURNAL_URLS = [
 ]
 ### 需要的年份(including 'from' and 'to')
 ACM_JOURNAL_YEAR = {
-    'from': 2019,
+    'from': 2017,
     'to': 2019
 }
 
 ## IEEE
 ### IEEE conferences
 IEEE_CONF_URLS = [
-    'https://ieeexplore.ieee.org/xpl/conhome/1000064/all-proceedings'
+    'https://ieeexplore.ieee.org/xpl/conhome/1000064/all-proceedings', # ASE
+    'https://ieeexplore.ieee.org/xpl/conhome/1000691/all-proceedings', # ISCE
 ]
 ### 需要的年份(including 'from' and 'to')
 IEEE_YEAR = {
-    'from': 2019,
+    'from': 2008,
     'to': 2019
 }
 ## IEEE journal
@@ -61,7 +96,7 @@ IEEE_JOURNAL_URLS = [
     'https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=32'
 ]
 IEEE_JOURNAL_YEAR = {
-    'from': 2019,
+    'from': 2009,
     'to': 2020
 }
 
@@ -81,7 +116,7 @@ SEARCH_WORDS = [
 MYSQL_HOST = 'localhost'
 # MYSQL_DBNAME = 'data_processing'
 MYSQL_DBNAME = 'data_processing_IEEE'
-# MYSQL_DBNAME = 'data_processing_ACM'
+MYSQL_DBNAME = 'data_processing_ACM'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'root'
 MYSQL_PORT = 3306
@@ -92,6 +127,11 @@ MYSQL_PORT = 3306
 START_TIME = datetime.datetime.now()
 
 # LOG
+# logging.CRITICAL - for critical errors (highest severity)
+# logging.ERROR - for regular errors
+# logging.WARNING - for warning messages
+# logging.INFO - for informational messages
+# logging.DEBUG - for debugging messages (lowest severity)
 LOG_LEVEL = 'DEBUG'
 LOG_FILE = 'scrapy_logs/Scrapy_{}_{}_{}_{}_{}_{}.log'.format(START_TIME.year, START_TIME.month, START_TIME.day, START_TIME.hour, START_TIME.minute, START_TIME.second)
 
@@ -112,7 +152,7 @@ ROBOTSTXT_OBEY = False
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 0.5
+DOWNLOAD_DELAY = 3
 AUTOTHROTTLE_ENABLED = True
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
