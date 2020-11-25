@@ -52,12 +52,8 @@ CREATE TABLE `paper_researcher` (
 
 CREATE TABLE `paper_reference` (
     `pid` varchar(255) COLLATE utf8_bin NOT NULL,
-    `order` int(11) NOT NULL,
-    `r_doi` varchar(255) COLLATE utf8_bin,
-    `r_title` varchar(4095) COLLATE utf8_bin,
-    `r_document_id` varchar(255) COLLATE utf8_bin,
-    `r_citation` varchar(4095) COLLATE utf8_bin,
-    PRIMARY KEY (`pid`, `order`)
+    `rid` varchar(255) COLLATE utf8_bin NOT NULL,
+    PRIMARY KEY (`pid`, `rid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 CREATE TABLE `paper_domain` (

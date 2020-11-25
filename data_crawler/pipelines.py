@@ -73,7 +73,7 @@ class ACMPaper2UnifyPipeline:
 
         order = 0
         paper['authors'] = []
-        if 'authors' in item:
+        if 'authors' in item and item['authors'] != None:
             for author in item['authors']:
                 order += 1
                 if 'author_profile' not in author:
@@ -85,7 +85,7 @@ class ACMPaper2UnifyPipeline:
                     'id': author_id, 
                     'name': author['author_name'],
                     'order': order,
-                    'affiliation': author.get('affiliation')
+                    'affiliation': author.get('affiliation', [])
                 }
                 paper['authors'].append(paper_author)    
         paper['abstract'] = item['abstract']
@@ -97,7 +97,7 @@ class ACMPaper2UnifyPipeline:
         paper['publicationYear'] = item['year']
         
         paper['references'] = []
-        if 'references' in item:
+        if 'references' in item and item['references'] != None:
             for reference in item['references']:
                 ref = {
                     'order': reference.get('order', None),
@@ -133,7 +133,7 @@ class IEEEPaper2UnifyPipeline:
 
         order = 0
         paper['authors'] = []
-        if 'authors' in item:
+        if 'authors' in item and item['authors'] != None:
             for author in item['authors']:
                 order += 1
                 if 'id' not in author:
@@ -143,7 +143,7 @@ class IEEEPaper2UnifyPipeline:
                     'id': author['id'],
                     'name': author['name'],
                     'order': order,
-                    'affiliation': author['affiliation']
+                    'affiliation': author.get('affiliation', [])
                 }
                 paper['authors'].append(paper_author)
         paper['abstract'] = item['abstract']
@@ -156,7 +156,7 @@ class IEEEPaper2UnifyPipeline:
 
         # 对IEEE需要处理两种：crossRefLink acmLink. 第三种是document类型的，需要爬一个新的页面。
         paper['references'] = []
-        if 'references' in item:
+        if 'references' in item and item['references'] != None:
             for reference in item['references']:
                 ref = {
                     'order': reference.get('order', None),
@@ -178,7 +178,7 @@ class IEEEPaper2UnifyPipeline:
 
         # 将IEEE controlled index作为domain存储
         paper['keywords'] = []
-        if 'keywords' in item:
+        if 'keywords' in item and item['keywords'] != None:
             for keyword_group in item['keywords']:
                 if keyword_group.get('type') == 'INSPEC: Controlled Indexing':
                     for controlled_index in keyword_group['kwd']:
@@ -276,20 +276,21 @@ class UnifyPaperMysqlPipeline(object):
             insert_researcher_affiliation_sql = """
             insert into researcher_affiliation(`rid`, `aid`, `year`) VALUES(%s, %s, %s)
             """
-            for aff in author['affiliation']:
-                # insert database table: affiliation
-                self.execute_sql(
-                    insert_affiliation_sql,
-                    (encode(aff), aff),
-                    cursor,
-                )
+            if author.get('affiliation') != None:
+                for aff in author['affiliation']:
+                    # insert database table: affiliation
+                    self.execute_sql(
+                        insert_affiliation_sql,
+                        (encode(aff), aff),
+                        cursor,
+                    )
 
-                # insert database table: researcher_affiliation
-                self.execute_sql(
-                    insert_researcher_affiliation_sql,
-                    (author['id'], encode(aff), paper['publicationYear']),
-                    cursor,
-                )
+                    # insert database table: researcher_affiliation
+                    self.execute_sql(
+                        insert_researcher_affiliation_sql,
+                        (author['id'], encode(aff), paper['publicationYear']),
+                        cursor,
+                    )
             
 
         # insert database table: domain paper_domain

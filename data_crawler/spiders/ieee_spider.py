@@ -164,12 +164,16 @@ class IEEESpider(scrapy.Spider):
         if search_res:
             content = json.loads(search_res.group()[9:-1])
             self.logger.debug('starts crawl document title: {}'.format(content.get('title', None)))
-            required = ['title', 'authors', 'abstract', 'articleNumber',
+            required_single = ['title', 'abstract', 'articleNumber',
                         'doi', 'publicationTitle', 'publicationYear', 'metrics',
-                        'contentType', 'keywords']
+                        'contentType',]
             # contentType: conference, journal, book
-            for i in required:
+            for i in required_single:
                 paper_item[i] = content.get(i, None)
+            
+            required_list = ['authors', 'keywords']
+            for i in required_list:
+                paper_item[i] = content.get(i, [])
 
             paper_item['publication_number'] = response.meta['publication_number']
             paper_item['issue_number'] = response.meta['issue_number']
@@ -190,8 +194,8 @@ class IEEESpider(scrapy.Spider):
         item = response.meta['paper_item']
         content = json.loads(response.text)
         item['references'] = []
-        if 'references' in content:
-            for reference in content.get('references'):
+        if 'references' in content and content.get('references', []) != None:
+            for reference in content.get('references', []):
                 ref = {}
                 ref['order'] = reference.get('order')
                 ref['text'] = reference.get('text') # could be the reference citation
