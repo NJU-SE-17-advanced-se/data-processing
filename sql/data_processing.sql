@@ -23,7 +23,7 @@ CREATE TABLE `domain` (
 
 CREATE TABLE `affiliation` (
     `id` varchar(255) NOT NULL,
-    `name` varchar(255) COLLATE utf8_bin NOT NULL,
+    `name` varchar(4095) COLLATE utf8_bin NOT NULL,
     `description` varchar(4095) COLLATE utf8_bin,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
@@ -67,4 +67,36 @@ CREATE TABLE `researcher_affiliation` (
     `aid` varchar(255) COLLATE utf8_bin NOT NULL,
     `year` varchar(255) COLLATE utf8_bin NOT NULL,
     PRIMARY KEY (`rid`, `aid`, `year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+CREATE TABLE `publication_mapping` (
+    `id_main` varchar(255) NOT NULL,
+    `id` varchar(255) NOT NULL,
+    `src` varchar(255) NOT NULL,
+    `merged` BOOLEAN,
+    PRIMARY KEY (`id_main`, `id`, `src`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+CREATE TABLE `paper_mapping` (
+    `id_main` varchar(255) NOT NULL,
+    `id` varchar(255) NOT NULL,
+    `src` varchar(255) NOT NULL,
+    `merged` BOOLEAN,
+    PRIMARY KEY (`id_main`, `id`, `src`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+CREATE TABLE `researcher_mapping` (
+    `id_main` varchar(255) NOT NULL,
+    `id` varchar(255) NOT NULL,
+    `src` varchar(255) NOT NULL,
+    `merged` BOOLEAN,
+    PRIMARY KEY (`id_main`, `id`, `src`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+CREATE TABLE `affiliation_mapping` (
+    `id` varchar(255) NOT NULL,
+    `name` varchar(255) NOT NULL,
+    `src_id` varchar(255) NOT NULL,
+    `src_name` varchar(4095) NOT NULL,
+    PRIMARY KEY (`id`, `src_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;

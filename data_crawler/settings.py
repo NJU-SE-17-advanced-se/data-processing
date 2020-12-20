@@ -26,6 +26,15 @@ BOT_NAME = 'data_crawler'
 SPIDER_MODULES = ['data_crawler.spiders']
 NEWSPIDER_MODULE = 'data_crawler.spiders'
 
+# Database
+MYSQL_HOST = 'localhost'
+# MYSQL_DBNAME = 'data_processing'
+MYSQL_DBNAME = 'data_processing_IEEE'
+MYSQL_DBNAME = 'data_processing_ACM'
+MYSQL_USER = 'root'
+MYSQL_PASSWORD = 'root'
+MYSQL_PORT = 3306
+
 # URL for Spider
 
 ## ACM
@@ -38,34 +47,34 @@ ACM_PROCEEDING_URLS = [
     'https://dl.acm.org/doi/proceedings/10.1145/3238147',
     'https://dl.acm.org/doi/proceedings/10.5555/3155562',
     'https://dl.acm.org/doi/proceedings/10.1145/2970276',
-    'https://dl.acm.org/doi/proceedings/10.5555/3343886',
-    'https://dl.acm.org/doi/proceedings/10.1145/2642937',
-    'https://dl.acm.org/doi/proceedings/10.5555/3107656',
-    'https://dl.acm.org/doi/proceedings/10.1145/2351676',
-    'https://dl.acm.org/doi/proceedings/10.5555/2190078',
-    'https://dl.acm.org/doi/proceedings/10.1145/1858996',
-    'https://dl.acm.org/doi/proceedings/10.5555/1747491',
-    # ICSE 19 - 09
-    'https://dl.acm.org/doi/proceedings/10.5555/3339505',
-    'https://dl.acm.org/doi/proceedings/10.1145/3180155',
-    'https://dl.acm.org/doi/proceedings/10.5555/3097368',
-    'https://dl.acm.org/doi/proceedings/10.1145/2884781',
-    'https://dl.acm.org/doi/proceedings/10.5555/2818754',
-    'https://dl.acm.org/doi/proceedings/10.5555/2819009',
-    'https://dl.acm.org/doi/proceedings/10.1145/2568225',
-    'https://dl.acm.org/doi/proceedings/10.5555/2486788',
-    'https://dl.acm.org/doi/proceedings/10.5555/2337223',
-    'https://dl.acm.org/doi/proceedings/10.5555/2337223',
-    'https://dl.acm.org/doi/proceedings/10.1145/1806799',
-    'https://dl.acm.org/doi/proceedings/10.1145/1810295',
-    'https://dl.acm.org/doi/proceedings/10.5555/1555001',
-    # ICSE Companion 19 - 09
-    'https://dl.acm.org/doi/proceedings/10.5555/3339663',
-    'https://dl.acm.org/doi/proceedings/10.1145/3183440',
-    'https://dl.acm.org/doi/proceedings/10.5555/3098344',
-    'https://dl.acm.org/doi/proceedings/10.1145/2889160',
-    'https://dl.acm.org/doi/proceedings/10.1145/2591062',
-    'https://dl.acm.org/doi/proceedings/10.5555/1585694'
+    # 'https://dl.acm.org/doi/proceedings/10.5555/3343886',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/2642937',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/3107656',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/2351676',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/2190078',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/1858996',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/1747491',
+    # # ICSE 19 - 09
+    # 'https://dl.acm.org/doi/proceedings/10.5555/3339505',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/3180155',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/3097368',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/2884781',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/2818754',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/2819009',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/2568225',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/2486788',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/2337223',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/2337223',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/1806799',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/1810295',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/1555001',
+    # # ICSE Companion 19 - 09
+    # 'https://dl.acm.org/doi/proceedings/10.5555/3339663',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/3183440',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/3098344',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/2889160',
+    # 'https://dl.acm.org/doi/proceedings/10.1145/2591062',
+    # 'https://dl.acm.org/doi/proceedings/10.5555/1585694'
 
 
 ]
@@ -87,8 +96,8 @@ IEEE_CONF_URLS = [
 ]
 ### 需要的年份(including 'from' and 'to')
 IEEE_YEAR = {
-    'from': 2008,
-    'to': 2019
+    'from': 2015,
+    'to': 2017
 }
 ## IEEE journal
 ### journal 主页的 url。事实上只需要 punumber
@@ -112,14 +121,6 @@ SEARCH_WORDS = [
 
 
 
-# Database
-MYSQL_HOST = 'localhost'
-# MYSQL_DBNAME = 'data_processing'
-MYSQL_DBNAME = 'data_processing_IEEE'
-MYSQL_DBNAME = 'data_processing_ACM'
-MYSQL_USER = 'root'
-MYSQL_PASSWORD = 'root'
-MYSQL_PORT = 3306
 
 #HTTPERROR_ALLOWED_CODES  =[400]
 
