@@ -25,6 +25,7 @@ class ACMProceedingSpider(scrapy.Spider):
     proceeding_urls = get_project_settings().get('ACM_PROCEEDING_URLS')
     journal_urls = get_project_settings().get('ACM_JOURNAL_URLS')
     journal_year = get_project_settings().get('ACM_JOURNAL_YEAR')
+    str_xpath = 'string(.)'
     
     def start_requests(self):
         for url in self.proceeding_urls:
@@ -79,7 +80,7 @@ class ACMProceedingSpider(scrapy.Spider):
         self.logger.info('start crawling journal issue: {}'.format(response.request.url))
         issues = response.xpath('.//div[@class="issue-item-container"]')
         for issue in issues:
-            if(issue.xpath('.//div[@class="issue-item__citation"]/div[@class="issue-heading"]/text()').get() == 'research-article'):
+            if(issue.xpath('.//div[@class="issue-item__citation"]/div[@class="issue-heading"]').xpath(str_xpath).get() == 'research-article'):
                 issue_url = issue.xpath('.//h5[@class="issue-item__title"]/a/@href').get()
                 yield scrapy.Request(
                     url=self.acm_base_url + issue_url,
@@ -144,6 +145,7 @@ class ACMProceedingSpider(scrapy.Spider):
             )
     
     def parse_paper(self, response):
+        str_xpath = self.str_xpath
         def parse_index_tree(selector):
             """传入一个树的select，返回树的json
             """
@@ -161,16 +163,16 @@ class ACMProceedingSpider(scrapy.Spider):
         result = ACMPaperItem()
         paper = response.xpath('//article')
 
-        result['title'] = paper.xpath('.//div[@class="citation"]//h1[@class="citation__title"]/text()').get()
+        result['title'] = paper.xpath('.//div[@class="citation"]//h1[@class="citation__title"]').xpath(str_xpath).get()
 
         # authors
         result['authors'] = []
         authors = paper.xpath('.//div[@class="citation"]//div[@id="sb-1"]/ul/li[@class="loa__item"]')
         for author in authors:
             result_author = {
-                'author_name': author.xpath('.//span[@class="loa__author-name"]/span/text()').get(),
+                'author_name': author.xpath('.//span[@class="loa__author-name"]/span').xpath(str_xpath).get(),
                 'author_profile': author.xpath('.//div[@class="author-info"]//div[@class="author-info__body"]/a/@href').get(),
-                'affiliation': author.xpath('.//div[@class="author-info__body"]/p/text()').getall()
+                'affiliation': author.xpath('.//div[@class="author-info__body"]/p').xpath(str_xpath).getall()
             }
             result['authors'].append(result_author)
 
@@ -184,7 +186,7 @@ class ACMProceedingSpider(scrapy.Spider):
         result['publication_title'] = publication.xpath('./a/@title').get()
 
         # paper发表年月
-        result['year'] = publication.xpath('.//span[@class="epub-section__date"]/text()').get().split()[1]
+        result['year'] = publication.xpath('.//span[@class="epub-section__date"]').xpath(str_xpath).get().split()[1]
         if 'year' in response.meta:
             result['year'] = response.meta['year']
 
@@ -199,7 +201,7 @@ class ACMProceedingSpider(scrapy.Spider):
                 result['doi'] = response.request.url
 
         # paper abstract
-        result['abstract'] = paper.xpath('.//div[@class="abstractSection abstractInFull"]/p/text()').get()
+        result['abstract'] = paper.xpath('.//div[@class="abstractSection abstractInFull"]/p').xpath(str_xpath).get()
         
         # paper references
         references_selectors = paper.xpath('.//div[contains(@class, "article__references")]/ol[contains(@class, "references__list")]/li')
@@ -207,9 +209,9 @@ class ACMProceedingSpider(scrapy.Spider):
             result['references'] = [
                 {
                     'order': int(reference.xpath('./@id').get().split('-')[1]), #id的样子大概是 ref-0001, 数字代表 order
-                    'reference_citation': reference.xpath('./span/text()').get(),
+                    'reference_citation': reference.xpath('./span').xpath(str_xpath).get(),
                     'reference_links': [{
-                            'link_type': link.xpath('./span[@class="visibility-hidden"]/text()').get(),
+                            'link_type': link.xpath('./span[@class="visibility-hidden"]').xpath(str_xpath).get(),
                             'link_url': link.xpath('./@href').get()
                         }
                         for link in reference.xpath('./span/span[@class="references__suffix"]/a')
@@ -222,13 +224,13 @@ class ACMProceedingSpider(scrapy.Spider):
         # index term
         root_selector = response.xpath('.//ol[@class="rlist organizational-chart"]/li')
         result['index_term_tree'] = {
-            'title': root_selector.xpath('./h6/text()').get(),
+            'title': root_selector.xpath('./h6').xpath(str_xpath).get(),
             'url': None,
             'child': [parse_index_tree(scrapy.Selector(text=tree_html).xpath('./body/li')) for tree_html in root_selector.xpath('./ol/li').getall()]
         }
 
         # metric citation number
-        result['citation'] = response.xpath('//span[@class="citation"]/span/text()').get()
+        result['citation'] = response.xpath('//span[@class="citation"]/span').xpath(str_xpath).get()
 
         self.logger.info("paper crawled, doi: {}".format(result['doi']))
         yield result

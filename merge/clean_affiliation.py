@@ -4,7 +4,7 @@ import pymysql
 import logging
 import sys
 import os
-sys.path.insert(0, os.path.join(os.getcwd(), "..")) 
+sys.path.insert(0, os.getcwd())  
 from merge.db_helper import db_helper
 from merge.utils import solve_affiliation_name
 from merge.utils import hash_str
@@ -18,7 +18,12 @@ db = db_helper(config['merge Database'])
 def change_affiliation(db: db_helper):
     affiliations = db.my_select('select * from affiliation')
     affiliations_mapping = []
+    num_aff = len(affiliations)
+    num_now = 0
     for aff in affiliations:
+        num_now += 1
+        if(num_now % 100 == 0):
+            logging.warning('cleaning affiliations, {}/{}'.format(num_now, num_aff))
         new_name = solve_affiliation_name(aff['name'])
         new_id = hash_str(new_name)
         affiliations_mapping.append({
@@ -27,8 +32,11 @@ def change_affiliation(db: db_helper):
             'src_id': aff['id'],
             'src_name': aff['name'],
         })
+        if new_name == aff['name']:
+            continue
         main_record = db.my_select('select count(*) from affiliation where `id` = "{}"'.format(new_id))
-        if main_record[0]['count(*)'] == 0:
+        main_record_num = main_record[0]['count(*)']
+        if main_record_num == 0:
             db.my_delete_update(
                 """
                 UPDATE affiliation SET id = "{}", name = "{}" WHERE `id` = "{}"
@@ -39,8 +47,8 @@ def change_affiliation(db: db_helper):
                 UPDATE researcher_affiliation SET aid = "{}" WHERE `aid` = "{}"
                 """.format(new_id, aff['id'])
             )
-        else:
-            # 已有那个 aff
+        elif main_record_num == 1:
+            # 并且不是自身 (由于new_name != aff['name'])
             db.my_delete_update(
                 """
                 delete from affiliation where `id` = "{}"
@@ -51,6 +59,8 @@ def change_affiliation(db: db_helper):
                 delete from researcher_affiliation WHERE `aid` = "{}"
                 """.format(aff['id'])
             )
+        else:
+            logging.warning('duplite id in affiliation, id: "{}"'.format(new_id))
 
         
 

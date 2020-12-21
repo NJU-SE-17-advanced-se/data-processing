@@ -6,11 +6,15 @@ import random
 from functools import reduce
 import sys
 from functools import cmp_to_key
-from utils import hash_str
-from utils import encode_id
+import sys
+import os
+sys.path.insert(0, os.path.join(os.getcwd(), "..")) 
+from merge.utils import hash_str
+from merge.utils import encode_id
+from data_crawler.utils import remove_html
 # from utils import solve_affiliation_name
 config = configparser.ConfigParser()
-config.read('/home/leo/Desktop/ASE/data-processing/merge/merge.ini')
+config.read('/home/leo/Desktop/ASE/data-processing/merge/merge2.ini')
 
 
 # Connect to database merge
@@ -193,7 +197,11 @@ def merge_paper(publication_mapping):
         """
         if p1.get('doi') == p2.get('doi') and p1.get('doi') != None:
             return True
-        if p1['title'] == p2['title']:
+        # title 只保留字母和数字，不区分大小写。
+        # 去除html（其实这在爬时应该已经做过，但是暂且实验）
+        title1 = "".join(filter(str.isalnum, remove_html(p1['title']))).lower()
+        title2 = "".join(filter(str.isalnum, remove_html(p2['title']))).lower()
+        if title1 == title2:
             return True
         return False
 

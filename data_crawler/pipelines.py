@@ -11,6 +11,7 @@ import json
 from data_crawler.items import IEEEPaperItem, PaperItem, ACMPaperItem
 from scrapy.exceptions import DropItem
 from data_crawler.utils import hash_str as encode
+from data_crawler.utils import remove_html
 
 import pymysql
 import datetime
@@ -184,7 +185,19 @@ class IEEEPaper2UnifyPipeline:
                     for controlled_index in keyword_group['kwd']:
                         paper['keywords'].append(controlled_index)
         return paper
-    
+
+class UnifyRmHTMLPipeline:
+    """
+    remove html in paper item
+    """
+    def process_item(self, item, spider):
+        # 只处理PaperItem
+        if not isinstance(item, PaperItem):
+            return item
+        item['title'] = remove_html(item['title'])
+        item['abstract'] = remove_html(item['abstract'])
+        return item
+
 class UnifyPaperMysqlPipeline(object):
     def __init__(self, dbpool):
         self.dbpool = dbpool
