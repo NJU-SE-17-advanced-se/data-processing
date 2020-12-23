@@ -29,6 +29,7 @@ class PaperItem(scrapy.Item):
     ref_citation = scrapy.Field()
     citation = scrapy.Field() # 被引量
     id = scrapy.Field() # id
+    url = scrapy.Field()
 
 class IEEEPaperItem(scrapy.Item):
     title = scrapy.Field()
@@ -44,6 +45,7 @@ class IEEEPaperItem(scrapy.Item):
     contentType = scrapy.Field()
     references = scrapy.Field()
     keywords = scrapy.Field()
+    url = scrapy.Field()
 
 # ACM的paper.TODO:将ACM和IEEE paper的item统一.暂时保存各自的尽可能多的信息.
 class ACMPaperItem(scrapy.Item):
@@ -58,3 +60,4 @@ class ACMPaperItem(scrapy.Item):
     citation = scrapy.Field() # paper citation
     references = scrapy.Field() # 该文章引用的文章
     index_term_tree = scrapy.Field() # ACM index term tree
+    url = scrapy.Field()

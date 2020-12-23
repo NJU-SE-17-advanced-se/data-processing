@@ -182,6 +182,9 @@ class ACMProceedingSpider(scrapy.Spider):
         # publication_id
         result['publication_id'] = response.meta['publication_id']
 
+        # url
+        result['url'] = response.requst.url
+
         # publication_title
         result['publication_title'] = publication.xpath('./a/@title').get()
 

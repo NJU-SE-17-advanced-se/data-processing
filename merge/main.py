@@ -181,6 +181,8 @@ def merge_publication_by_id(id1, id2):
         return
     my_delete_update(connection_merge, 'delete from publication where `id` = "{}"'.format(id2))
     my_delete_update(connection_merge, 'UPDATE publication_mapping SET `id_main` = "{}", `merged` = "{}" where `id_main` = "{}"'.format(id1, 1, id2))
+# %%
+publication_mapping = merge_publication()
 
 # %%
 def merge_paper(publication_mapping):
@@ -189,14 +191,21 @@ def merge_paper(publication_mapping):
     paper_mapping = []
     papers = []
     paper_ieee = my_select(connection_ieee, 'select * from paper')
+    for i in paper_ieee:
+        i['src'] = 'IEEE'
     paper_acm = my_select(connection_acm, 'select * from paper')
+    for i in paper_acm:
+        i['src'] = 'ACM'
 
     def paper_is_equal(p1, p2):
         """
         return true if two paper is the same paper
         """
+        
         if p1.get('doi') == p2.get('doi') and p1.get('doi') != None:
             return True
+        if p1.get('src') == p2.get('src'):
+            return False
         # title 只保留字母和数字，不区分大小写。
         # 去除html（其实这在爬时应该已经做过，但是暂且实验）
         title1 = "".join(filter(str.isalnum, remove_html(p1['title']))).lower()
@@ -252,8 +261,12 @@ def merge_paper(publication_mapping):
         if i[1] not in publication_equal_dict:
             publication_equal_dict[i[1]] = i[0]
     for i in papers:
-        if i['publication_id'] in publication_equal_dict:
-            i['publication_id'] = publication_equal_dict[i['publication_id']]
+        pub = i['publication_id']
+        while pub in publication_equal_dict:
+            if publication_equal_dict[pub] == pub:
+                break
+            pub = publication_equal_dict[pub]
+        i['publication_id'] = pub
     
 
     papers = map(
@@ -274,8 +287,10 @@ def merge_paper(publication_mapping):
     my_insert_many(connection_merge, 'insert ignore into paper_mapping(id_main, id, src, merged) values(%s, %s, %s, %s)', paper_mapping)
     return paper_mapping
 
+# %%
+paper_mapping = merge_paper(publication_mapping)
 
-
+# %%
 def map_paper_id(id):
     """
     把分库 paper id 对应到合并库 id
@@ -302,6 +317,10 @@ def merge_domain():
     my_insert_many(connection_merge, 'insert ignore into domain(id, name, url) values(%s, %s, %s)', domain)
     my_insert_many(connection_merge, 'insert ignore into paper_domain(pid, did) values(%s, %s)', paper_domain)
 
+# %%
+merge_domain()
+
+# %%
 def merge_affiliation():
     ieee_affiliation = my_select(connection_ieee, 'select * from affiliation')
     acm_affiliation = my_select(connection_acm, 'select * from affiliation')
@@ -310,6 +329,11 @@ def merge_affiliation():
     ), ieee_affiliation + acm_affiliation)
     my_insert_many(connection_merge, 'insert ignore into affiliation(id, name, description) values(%s, %s, %s)', affiliation)
 
+
+# %%
+merge_affiliation()
+
+# %%
 def merge_researcher(paper_mapping):
     ieee_researchers = my_select(connection_ieee, 'select * from researcher')
     acm_researchers = my_select(connection_acm, 'select * from researcher')
@@ -349,7 +373,7 @@ def merge_researcher(paper_mapping):
     researcher_paper = list(filter(lambda x: isinstance(x['pid'], str), researcher_paper))
 
     # 合并researcher
-    paper_merged = list(filter(lambda x: x[3] and x[2] == 'ACM', paper_mapping))
+    paper_merged = list(filter(lambda x: x[3] and x[2] == 'ACM', paper_mapping)) #TODO: why ACM?
     merged_paper_ids = list(map(lambda x: x[0], paper_merged))
     researcher_merge_info = []
     researcher_merge_sets_dict = {}
@@ -419,9 +443,10 @@ def merge_researcher(paper_mapping):
 
 
     # 将 researcher_paper 中被合并的 rid 扔掉
-    def rm_merged_researchers(rp):
-        return not dict_rid_2_researcher_mapping[rp['rid']][3]
-    researcher_paper = list(filter(rm_merged_researchers, researcher_paper))
+    researcher_id_all = []
+    for i in researchers:
+        researcher_id_all.append(i['id'])
+    researcher_paper = list(filter(lambda x: x['rid'] in researcher_id_all, researcher_paper))
     researchers = list(map(lambda x: (
         x['id'],
         x['name']
@@ -437,18 +462,6 @@ def merge_researcher(paper_mapping):
 
     return researchers_mapping
 
-
-# %%
-publication_mapping = merge_publication()
-
-# %%
-paper_mapping = merge_paper(publication_mapping)
-
-# %%
-merge_domain()
-
-# %%
-merge_affiliation()
 
 # %%
 researcher_mapping = merge_researcher(paper_mapping)
@@ -468,7 +481,6 @@ def merge_paper_reference(paper_mapping):
             return True
         else:
             return result[3]
-    
     # 过滤掉被 merge 的文章的 reference 记录
     ieee_paper_reference = list(filter(
         lambda x, paper_mapping=paper_mapping_dict: 
@@ -539,6 +551,7 @@ def merge_paper_reference(paper_mapping):
     
     my_insert_many(connection_merge, 'insert ignore into paper_reference(pid, rid) values(%s, %s)', result_paper_reference)
 
+# %%
 merge_paper_reference(paper_mapping)
 
 # %%
@@ -568,5 +581,6 @@ def merge_researcher_affiliation():
         )
     my_insert_many(connection_merge, 'insert ignore into researcher_affiliation(`rid`, `aid`, `year`) values(%s, %s, %s)', result_researcher_affiliation)
     print('haha')
+# %%
 merge_researcher_affiliation()
 # %%

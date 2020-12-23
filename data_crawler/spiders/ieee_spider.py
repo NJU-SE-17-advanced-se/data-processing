@@ -177,6 +177,7 @@ class IEEESpider(scrapy.Spider):
 
             paper_item['publication_number'] = response.meta['publication_number']
             paper_item['issue_number'] = response.meta['issue_number']
+            paper_item['url'] = response.request.url
 
             # deal with reference
             yield scrapy.Request(

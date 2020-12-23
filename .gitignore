@@ -112,3 +112,4 @@ venv.bak/
 #others
 node_modules/
 merge/merge2.ini
+merge/merge3.ini

@@ -96,6 +96,7 @@ class ACMPaper2UnifyPipeline:
         paper['id'] = item['doi']
         paper['citation'] = item['citation']
         paper['publicationYear'] = item['year']
+        paper['url'] = item['url']
         
         paper['references'] = []
         if 'references' in item and item['references'] != None:
@@ -154,6 +155,7 @@ class IEEEPaper2UnifyPipeline:
         paper['id'] = item['articleNumber']
         paper['citation'] = item['metrics']['citationCountPaper']
         paper['publicationYear'] = item['publicationYear']
+        paper['url'] = item['url']
 
         # 对IEEE需要处理两种：crossRefLink acmLink. 第三种是document类型的，需要爬一个新的页面。
         paper['references'] = []
@@ -251,7 +253,7 @@ class UnifyPaperMysqlPipeline(object):
                 paper['abstract'],
                 paper['publication_id'],
                 paper['publicationYear'],
-                'doi.org/' + paper['doi'] if paper['doi'] != None else None,
+                paper['url'],
                 paper['doi'],
                 paper['citation']
             ),
