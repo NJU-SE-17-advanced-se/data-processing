@@ -222,16 +222,9 @@ def merge_paper(publication_mapping):
         return main_record
 
     def callback_paper_merge(paper1, paper2, publication_equal):
-        """ callback after merge the paper, merge the publication
-        TODO： 这里不考虑三个 publication 合并的可能
+        """ don't merge publication now
         """
-        # merge_publication_by_id(paper1['publication_id'], paper2['publication_id'])
-        if paper1['publication_id'] < paper2['publication_id']:
-            publication_equal.add((paper1['publication_id'], paper2['publication_id']))
-        else:
-            publication_equal.add((paper2['publication_id'], paper1['publication_id']))
-
-        # logging.debug('merge papers: "{}", "{}"'.format(paper1, paper2))
+        pass
 
     def change_paper(paper, src, publication_mapping_dict):
         if src == 'IEEE':
@@ -251,22 +244,8 @@ def merge_paper(publication_mapping):
     publication_mapping_dict = {}
     for i in publication_mapping:
         publication_mapping_dict[(i[1], i[2])] = {'id_main': i[0], 'id': i[1], 'src': i[2], 'merged': i[3]}
-    publication_equal = set()
-    change_merge_map(paper_ieee, papers, paper_mapping, change=lambda x, src='IEEE', dic=publication_mapping_dict: change_paper(x, src, dic), is_equal=paper_is_equal, src='IEEE', update=update_paper, equal_callback=lambda x, y, z = publication_equal: callback_paper_merge(x, y, z))
-    change_merge_map(paper_acm, papers, paper_mapping, change=lambda x, src='ACM', dic=publication_mapping_dict: change_paper(x, src, dic), is_equal=paper_is_equal, src='ACM', update=update_paper,equal_callback=lambda x, y, z = publication_equal: callback_paper_merge(x, y, z))
-
-    publication_equal_dict = {} # 被合并的 publication id -> 对应的 pid
-    for i in publication_equal:
-        merge_publication_by_id(i[0], i[1])
-        if i[1] not in publication_equal_dict:
-            publication_equal_dict[i[1]] = i[0]
-    for i in papers:
-        pub = i['publication_id']
-        while pub in publication_equal_dict:
-            if publication_equal_dict[pub] == pub:
-                break
-            pub = publication_equal_dict[pub]
-        i['publication_id'] = pub
+    change_merge_map(paper_ieee, papers, paper_mapping, change=lambda x, src='IEEE', dic=publication_mapping_dict: change_paper(x, src, dic), is_equal=paper_is_equal, src='IEEE', update=update_paper,)
+    change_merge_map(paper_acm, papers, paper_mapping, change=lambda x, src='ACM', dic=publication_mapping_dict: change_paper(x, src, dic), is_equal=paper_is_equal, src='ACM', update=update_paper,)
     
 
     papers = map(

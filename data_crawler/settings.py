@@ -29,7 +29,6 @@ NEWSPIDER_MODULE = 'data_crawler.spiders'
 # Database
 MYSQL_HOST = 'localhost'
 # MYSQL_DBNAME = 'data_processing'
-MYSQL_DBNAME = 'data_processing_IEEE'
 MYSQL_DBNAME = 'data_processing_ACM'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'root'
@@ -37,72 +36,73 @@ MYSQL_PORT = 3306
 
 # URL for Spider
 
+ASE_NAME = 'IEEE/ACM International Conference on Automated Software Engineering'
+ICSE_NAME = 'International Conference on Software Engineering'
+TOSEM_NAME = 'ACM Transactions on Software Engineering and Methodology'
 ## ACM
 ### ACM search result urls
 ACM_URL = ['https://dl.acm.org/action/doSearch?fillQuickSearch=false&expand=dl&field1=AllField&text1=shit&Ppub=%5B20200907+TO+20201007%5D'] 
 ### ACM conference proceeding urls
 ACM_PROCEEDING_URLS = [
     # ASE 19 - 09
-    'https://dl.acm.org/doi/proceedings/10.5555/3382508',
-    'https://dl.acm.org/doi/proceedings/10.1145/3238147',
-    'https://dl.acm.org/doi/proceedings/10.5555/3155562',
-    'https://dl.acm.org/doi/proceedings/10.1145/2970276',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/3343886',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/2642937',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/3107656',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/2351676',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/2190078',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/1858996',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/1747491',
-    # # ICSE 19 - 09
-    # 'https://dl.acm.org/doi/proceedings/10.5555/3339505',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/3180155',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/3097368',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/2884781',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/2818754',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/2819009',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/2568225',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/2486788',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/2337223',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/2337223',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/1806799',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/1810295',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/1555001',
+    ('https://dl.acm.org/doi/proceedings/10.5555/3382508', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/3238147', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/3155562', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/2970276', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/3343886', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/2642937', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/3107656', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/2351676', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/2190078', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/1858996', ASE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/1747491', ASE_NAME),
+    # ICSE 19 - 09
+    ('https://dl.acm.org/doi/proceedings/10.5555/3339505', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/3180155', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/3097368', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/2884781', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/2818754', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/2819009', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/2568225', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/2486788', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/2337223', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/2337223', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/1806799', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/1810295', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/1555001', ICSE_NAME),
     # # ICSE Companion 19 - 09
-    # 'https://dl.acm.org/doi/proceedings/10.5555/3339663',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/3183440',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/3098344',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/2889160',
-    # 'https://dl.acm.org/doi/proceedings/10.1145/2591062',
-    # 'https://dl.acm.org/doi/proceedings/10.5555/1585694'
-
-
+    ('https://dl.acm.org/doi/proceedings/10.5555/3339663', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/3183440', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/3098344', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/2889160', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.1145/2591062', ICSE_NAME),
+    ('https://dl.acm.org/doi/proceedings/10.5555/1585694', ICSE_NAME),
 ]
 ### ACM journals
 ACM_JOURNAL_URLS = [
-    'https://dl.acm.org/loi/tosem'
+    ('https://dl.acm.org/loi/tosem', TOSEM_NAME)
 ]
 ### 需要的年份(including 'from' and 'to')
 ACM_JOURNAL_YEAR = {
-    'from': 2017,
+    'from': 2009,
     'to': 2019
 }
 
 ## IEEE
 ### IEEE conferences
 IEEE_CONF_URLS = [
-    'https://ieeexplore.ieee.org/xpl/conhome/1000064/all-proceedings', # ASE
-    'https://ieeexplore.ieee.org/xpl/conhome/1000691/all-proceedings', # ISCE
+    ('https://ieeexplore.ieee.org/xpl/conhome/1000064/all-proceedings', ASE_NAME),# ASE
+    ('https://ieeexplore.ieee.org/xpl/conhome/1000691/all-proceedings', ICSE_NAME) # ISCE
 ]
 ### 需要的年份(including 'from' and 'to')
 IEEE_YEAR = {
-    'from': 2015,
-    'to': 2017
+    'from': 2009,
+    'to': 2019
 }
 ## IEEE journal
 ### journal 主页的 url。事实上只需要 punumber
 IEEE_JOURNAL_URLS = [
-    'https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=32'
+    ('https://ieeexplore.ieee.org/xpl/RecentIssue.jsp?punumber=32', 'IEEE Transactions on Software Engineering')
 ]
 IEEE_JOURNAL_YEAR = {
     'from': 2009,

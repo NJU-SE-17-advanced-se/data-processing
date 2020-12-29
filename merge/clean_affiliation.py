@@ -8,8 +8,7 @@ sys.path.insert(0, os.getcwd())
 sys.path.insert(0, os.path.join(os.getcwd(), ".."))
 from merge.db_helper import db_helper
 from merge.utils import hash_str
-from merge.aff_id_to_name import get_aff_clean_name_by_id
-
+from merge.utils import get_clean_name_by_name
 # %%
 config = configparser.ConfigParser()
 config.read('/home/leo/Desktop/ASE/data-processing/merge/merge2.ini')
@@ -42,7 +41,7 @@ def change_affiliation(db: db_helper):
         if(num_now % 100 == 0):
             logging.warning('cleaning affiliations, {}/{}'.format(num_now, num_aff))
 
-        new_name = get_aff_clean_name_by_id(aff['id'])
+        new_name = get_clean_name_by_name(aff['name'])
         if new_name == None:
             new_name = aff['name']
         new_id = hash_str(new_name)
@@ -56,31 +55,10 @@ def change_affiliation(db: db_helper):
             continue
         main_record_num = get_aff_num_by_id(affiliations, new_id)
         if main_record_num == 0:
-            set_aff_by_aid(affiliations, aff['id'], new_id, new_name)
-            # db.my_delete_update(
-            #     """
-            #     UPDATE affiliation SET id = "{}", name = "{}" WHERE `id` = "{}"
-            #     """.format(new_id, new_name, aff['id'])
-            # )
             set_ra_aid(researcher_affiliation, aff['id'], new_id)
-            # db.my_delete_update(
-            #     """
-            #     UPDATE researcher_affiliation SET aid = "{}" WHERE `aid` = "{}"
-            #     """.format(new_id, aff['id'])
-            # )
+            set_aff_by_aid(affiliations, aff['id'], new_id, new_name)
         elif main_record_num == 1:
-            # 有这个机构，并且不是自身 (由于new_name != aff['name'])
-            # db.my_delete_update(
-            #     """
-            #     delete from affiliation where `id` = "{}"
-            #     """.format(aff['id'])
-            # )
             affiliations = list(filter(lambda x, aid = aff['id']: x['id'] != aid, affiliations))
-            # db.my_delete_update(
-            #     """
-            #     delete from researcher_affiliation WHERE `aid` = "{}"
-            #     """.format(aff['id'])
-            # )
             researcher_affiliation = list(filter(lambda x, aid = aff['id']: x['aid'] != aid, researcher_affiliation))
         else:
             logging.warning('duplite id in affiliation, id: "{}"'.format(new_id))

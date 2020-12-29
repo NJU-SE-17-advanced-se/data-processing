@@ -15,40 +15,49 @@ class IEEESpider(scrapy.Spider):
     name = "IEEE_Conferences_Journals"
     allowed_domains = ["ieeexplore.ieee.org"]
     ieee_urls = get_project_settings().get('IEEE_CONF_URLS')
+    ieee_urls = list(map(lambda x: {'url': x[0], 'title': x[1]}, ieee_urls))
     ieee_year = get_project_settings().get('IEEE_YEAR')
     journal_urls = get_project_settings().get('IEEE_JOURNAL_URLS')
+    journal_urls = list(map(lambda x: {'url': x[0], 'title': x[1]}, journal_urls))
     journal_year = get_project_settings().get('IEEE_JOURNAL_YEAR')
     ieee_base_url = 'https://ieeexplore.ieee.org'
     
     def start_requests(self):
         # crawl conferences
-        for url in self.ieee_urls:
-            parentId = url[40:47]
+        for conf in self.ieee_urls:
+            parentId = conf['url'][40:47]
             conference_list_url = 'https://ieeexplore.ieee.org/rest/publication/conhome/metadata?parentId=' + parentId
             yield scrapy.Request(
                 url=conference_list_url,
                 callback=self.parse_conference_list,
                 headers={
-                    'Referer': url,
+                    'Referer': conf['url'],
                     'Host': self.allowed_domains[0],
                     'Origin': self.ieee_base_url,
                     'Content-Type': 'application/json'
                 },
+                meta={
+                    'publication_title': conf['title']
+                }
             )
         
         # crawl journals
-        for url in self.journal_urls:
-            publication_id = url[57:]
+        for conf in self.journal_urls:
+            publication_id = conf['url'][57:]
             get_issue_list_url = 'https://ieeexplore.ieee.org/rest/publication/{}/regular-issues'.format(publication_id)
             yield scrapy.Request(
                 url=get_issue_list_url,
                 callback=self.parse_journal_issue_list,
                 headers={
-                    'Referer': url,
+                    'Referer': conf['url'],
                     'Host': self.allowed_domains[0],
                     'Origin': self.ieee_base_url,
                     'Content-Type': 'application/json'
                 },
+                meta={
+                    'publication_title': conf['title']
+
+                }
             )
     
     def parse_journal_issue_list(self, response):
@@ -77,7 +86,8 @@ class IEEESpider(scrapy.Spider):
                                 }),
                                 meta={
                                     'publication_number': issue['publicationNumber'],
-                                    'issue_number': issue['issueNumber']
+                                    'issue_number': issue['issueNumber'],
+                                    'publication_title': response.meta['publication_title']
                                 }
                             )
 
@@ -105,7 +115,8 @@ class IEEESpider(scrapy.Spider):
                         }),
                         meta={
                             'publication_number': record['publicationNumber'],
-                            'issue_number': issue['issueNumber']
+                            'issue_number': issue['issueNumber'],
+                            'publication_title': response.meta['publication_title']
                         }
                     )
     
@@ -125,7 +136,8 @@ class IEEESpider(scrapy.Spider):
                     callback=self.parse_document,
                     meta={
                         'publication_number': response.meta['publication_number'],
-                        'issue_number':response.meta['issue_number']
+                        'issue_number':response.meta['issue_number'],
+                        'publication_title': response.meta['publication_title']
                     }
                 )
 
@@ -141,7 +153,8 @@ class IEEESpider(scrapy.Spider):
                         body=json.dumps(request_body),
                         meta={
                             'publication_number': response.meta['publication_number'],
-                            'issue_number':response.meta['issue_number']
+                            'issue_number':response.meta['issue_number'],
+                            'publication_title': response.meta['publication_title']
                         }
                     )
         
@@ -165,7 +178,7 @@ class IEEESpider(scrapy.Spider):
             content = json.loads(search_res.group()[9:-1])
             self.logger.debug('starts crawl document title: {}'.format(content.get('title', None)))
             required_single = ['title', 'abstract', 'articleNumber',
-                        'doi', 'publicationTitle', 'publicationYear', 'metrics',
+                        'doi', 'publicationYear', 'metrics',
                         'contentType',]
             # contentType: conference, journal, book
             for i in required_single:
@@ -176,6 +189,7 @@ class IEEESpider(scrapy.Spider):
                 paper_item[i] = content.get(i, [])
 
             paper_item['publication_number'] = response.meta['publication_number']
+            paper_item['publicationTitle'] = response.meta['publication_title']
             paper_item['issue_number'] = response.meta['issue_number']
             paper_item['url'] = response.request.url
 

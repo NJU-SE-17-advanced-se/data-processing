@@ -23,23 +23,31 @@ class ACMProceedingSpider(scrapy.Spider):
     acm_base_url = 'https://dl.acm.org'
     allowed_domains = ['dl.acm.org']
     proceeding_urls = get_project_settings().get('ACM_PROCEEDING_URLS')
+    proceeding_urls = list(map(lambda x: {'url': x[0], 'title': x[1]}, proceeding_urls))
     journal_urls = get_project_settings().get('ACM_JOURNAL_URLS')
+    journal_urls = list(map(lambda x: {'url': x[0], 'title': x[1]}, journal_urls))
     journal_year = get_project_settings().get('ACM_JOURNAL_YEAR')
     str_xpath = 'string(.)'
     
     def start_requests(self):
-        for url in self.proceeding_urls:
+        for proc in self.proceeding_urls:
             yield scrapy.Request(
-                url=url,
+                url=proc['url'],
                 callback=self.parse_proceedings,
-                dont_filter=True
+                dont_filter=True,
+                meta={
+                    'publication_title': proc['title']
+                }
             )
         
-        for url in self.journal_urls:
+        for journal in self.journal_urls:
             yield scrapy.Request(
-                url=url,
+                url=journal['url'],
                 callback=self.parse_journals,
-                dont_filter=True
+                dont_filter=True,
+                meta={
+                    'publication_title': journal['title']
+                }
             )
     
     def parse_journals(self, response):
@@ -64,7 +72,10 @@ class ACMProceedingSpider(scrapy.Spider):
             }
             yield scrapy.Request(
                 url='https://dl.acm.org/pb/widgets/loi/loiAjax?' + urlencode(query_string_param),
-                callback=self.parse_journals_year
+                callback=self.parse_journals_year,
+                meta={
+                    'publication_title': response.meta['publication_title']
+                }
             )
         yield None
     
@@ -74,20 +85,24 @@ class ACMProceedingSpider(scrapy.Spider):
             yield scrapy.Request(
                 url=self.acm_base_url + issue_url,
                 callback=self.parse_journals_issue,
+                meta={
+                    'publication_title': response.meta['publication_title']
+                }
             )
 
     def parse_journals_issue(self, response):
         self.logger.info('start crawling journal issue: {}'.format(response.request.url))
         issues = response.xpath('.//div[@class="issue-item-container"]')
         for issue in issues:
-            if(issue.xpath('.//div[@class="issue-item__citation"]/div[@class="issue-heading"]').xpath(str_xpath).get() == 'research-article'):
+            if(issue.xpath('.//div[@class="issue-item__citation"]/div[@class="issue-heading"]').xpath(self.str_xpath).get() == 'research-article'):
                 issue_url = issue.xpath('.//h5[@class="issue-item__title"]/a/@href').get()
                 yield scrapy.Request(
                     url=self.acm_base_url + issue_url,
                     callback=self.parse_paper,
                     meta={
                         'publication_id': response.request.url[18:], # 例如 'https://dl.acm.org/toc/tosem/2015/25/1'，取'/toc/tosem/2015/25/1',
-                        'year': response.request.url[18:].split('/')[3]
+                        'year': response.request.url[18:].split('/')[3],
+                        'publication_title': response.meta['publication_title']
                     }
                 )
 
@@ -125,7 +140,8 @@ class ACMProceedingSpider(scrapy.Spider):
                     # information just for logging
                     'proceeding_doi': doi,
                     'session_heading': session_id,
-                    'session_num': len(session_ids)
+                    'session_num': len(session_ids),
+                    'publication_title': response.meta['publication_title']
                 }
             )
 
@@ -141,6 +157,7 @@ class ACMProceedingSpider(scrapy.Spider):
                 callback=self.parse_paper,
                 meta={
                     'publication_id': response.meta['proceeding_doi'],
+                    'publication_title': response.meta['publication_title']
                 }
             )
     
@@ -183,10 +200,10 @@ class ACMProceedingSpider(scrapy.Spider):
         result['publication_id'] = response.meta['publication_id']
 
         # url
-        result['url'] = response.requst.url
+        result['url'] = response.request.url
 
         # publication_title
-        result['publication_title'] = publication.xpath('./a/@title').get()
+        result['publication_title'] = response.meta['publication_title']
 
         # paper发表年月
         result['year'] = publication.xpath('.//span[@class="epub-section__date"]').xpath(str_xpath).get().split()[1]
