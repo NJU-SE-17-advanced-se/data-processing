@@ -187,6 +187,14 @@ class IEEEPaper2UnifyPipeline:
                     for controlled_index in keyword_group['kwd']:
                         paper['keywords'].append(controlled_index)
         return paper
+class CleanDomainPipeline:
+    def process_item(self, item, spider):
+        # 只处理PaperItem
+        if not isinstance(item, PaperItem):
+            return item
+        item['keywords'] = list(map(lambda x: x.lower(), item['keywords']))
+        return item
+
 
 class UnifyRmHTMLPipeline:
     """
